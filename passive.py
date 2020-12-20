@@ -55,10 +55,13 @@ def make_markets(session, mkt_snap, risk, orders) -> dict:
     for sym in orders.keys():
         bid_price_us, ask_price_us = get_mm_price(sym, mkt_snap, risk)
         bid_qty, ask_qty = risk.get_quantity(sym)
-        print(bid_price_us, ask_price_us, bid_qty, ask_qty)
+        # print(bid_price_us, ask_price_us, bid_qty, ask_qty)
+        print(f'current touch: {mkt_snap.get_touch(sym)}')
+        print(f'target us: {bid_price_us, ask_price_us}')
+
     if orders[sym]:
         order_info = orders[sym]
-        print(order_info)
+        # print(order_info)
 
         bid_us = session.fetch_order(
             order_info['bids'][0]['id'])

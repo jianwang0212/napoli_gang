@@ -43,7 +43,7 @@ while True:
     prev_mkt_snap = cur_mkt_snap
 
     passive_orders = make_markets(liquid, cur_mkt_snap, risk, passive_orders)
-    print(passive_orders)
+    # print(passive_orders)
     time.sleep(2)
 
 
