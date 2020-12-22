@@ -8,12 +8,9 @@ import numpy as np
 from math import floor
 
 
-def get_mm_price(sym: str, mkt_snap, risk) -> typing.Tuple[float, float]:
-    # bal_ratio = float(risk.get_trading_risk(
-    #     sym) / risk.risk_tolerance.max_net_risk[sym])
-
+def get_bal_ratio_step(bal_ratio: float) -> float:
     # bal = 0.8 means ETH / TOTAL = 0.8 -> bal_ratio = 0.3
-    bal_ratio = risk.get_bal_ratio(sym) - 0.5
+
     if abs(bal_ratio) < 0.05:
         bal_ratio_step = 0
     elif abs(bal_ratio) < 0.1:
@@ -22,30 +19,45 @@ def get_mm_price(sym: str, mkt_snap, risk) -> typing.Tuple[float, float]:
         bal_ratio_step = bal_ratio * 0.5
     else:
         bal_ratio_step = 1
+    return bal_ratio_step
 
-    fair_price, bid_px, ask_px = mkt_snap.get_weighted_fair(sym, 3)
+
+def get_risk_adjusted_bid_ask(bal_ratio: float, fair_price: float, bid_px: float, ask_px: float) -> float:
     spread = ask_px - bid_px
-
-    bid_without_risk_adjust = fair_price - spread / 2
-    ask_without_risk_adjust = fair_price + spread / 2
+    bid_micro = fair_price - spread / 2
+    ask_micro = fair_price + spread / 2
+    bal_ratio_step = get_bal_ratio_step(bal_ratio)
 
     if bal_ratio >= 0:
-        bid_price = bid_without_risk_adjust * (1 - bal_ratio_step * 0.01)
-        if bid_price > bid_px:
-            bid_price = bid_px
-        ask_price = ask_without_risk_adjust
-        if ask_price < ask_px:
-            ask_price = ask_px
-
+        bid_m_risk = bid_micro * (1 - bal_ratio_step * 0.01)
+        bid_m_risk = min(bid_px, bid_m_risk)
+        ask_m_risk = max(ask_px, ask_micro)
     else:
-        bid_price = bid_without_risk_adjust
-        if bid_price > bid_px:
-            bid_price = bid_px
-        ask_price = ask_without_risk_adjust * (1 - bal_ratio_step * 0.01)
-        if as_price < ask_px:
-            ask_price = ask_px
+        ask_m_risk = ask_micro * (1 - bal_ratio_step * 0.01)
+        ask_m_risk = max(ask_px, ask_m_risk)
+        bid_m_risk = min(bid_px, bid_micro)
 
-    return round(bid_price, 2), round(ask_price, 2)
+    return bid_m_risk, ask_m_risk
+
+
+def get_mm_price(sym: str, mkt_snap, risk) -> typing.Tuple[float, float]:
+    # micro micro price
+    fair_price, bid_px, ask_px = mkt_snap.get_weighted_fair(sym, 3)
+
+    # micro + risk_adjustment
+    bal_ratio = risk.get_bal_ratio(sym) - 0.5
+    print(f"bal_ratio: {bal_ratio}")
+
+    bid_m_risk, ask_m_risk = get_risk_adjusted_bid_ask(
+        bal_ratio, fair_price, bid_px, ask_px)
+
+    # fee adjustment
+
+    # Alpha adjustment
+
+    # profit margin adjustment
+
+    return round(bid_m_risk, 2), round(ask_m_risk, 2)
 
 
 def make_markets(session, mkt_snap, risk, orders) -> dict:

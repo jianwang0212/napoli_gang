@@ -33,18 +33,29 @@ passive_orders = {'ETH': {}}
 prev_mkt_snap = None
 
 book_server.cancel_all(liquid)
-while True:
-    mkt_snaps = []
-    mkt_snaps.append(book_server.get_market_snap(liquid, symbols))
-    risk = risk_server.update_risk_server(liquid, riskTolerance)
-    cur_mkt_snap = mkt_snaps[-1]
-    if cur_mkt_snap != prev_mkt_snap:
-        print('trade')
-    prev_mkt_snap = cur_mkt_snap
 
-    passive_orders = make_markets(liquid, cur_mkt_snap, risk, passive_orders)
-    # print(passive_orders)
-    time.sleep(2)
+
+while True:
+    for i in range(60):
+
+        mkt_snaps = []
+        mkt_snaps.append(book_server.get_market_snap(liquid, symbols))
+        risk = risk_server.update_risk_server(liquid, riskTolerance)
+        cur_mkt_snap = mkt_snaps[-1]
+        if cur_mkt_snap != prev_mkt_snap:
+            print('____________________________________')
+        prev_mkt_snap = cur_mkt_snap
+
+        passive_orders = make_markets(
+            liquid, cur_mkt_snap, risk, passive_orders)
+        # print(passive_orders)
+        time.sleep(2)
+        i += 1
+
+        if i == 60:
+            break
+    book_server.cancel_all(liquid)
+    time.sleep(400)
 
 
 # print(mkt_snaps)
