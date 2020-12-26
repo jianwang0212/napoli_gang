@@ -17,26 +17,20 @@ import cfg
 
 liquid = ccxt.liquid(cfg.liquid_credential)
 
-
-riskTolerance = risk_server.initialise_risk_tolerances(liquid.fetch_balance(
-)['total']['ETH'], liquid.fetch_ticker('ETH/JPY')['last'])
-
-
-# risk.get_net_risk()
-
 symbols = ['ETH']
-# mkt_snap = book_server.get_market_snap(liquid, symbols)
-
-# get_mm_price('ETH', mkt_snap, risk)
-passive_orders = {'ETH': {}}
-
-prev_mkt_snap = None
 
 book_server.cancel_all(liquid)
 
-
 while True:
-    for i in range(60):
+    i = 0
+    riskTolerance = risk_server.initialise_risk_tolerances(liquid.fetch_balance(
+    )['total']['ETH'], liquid.fetch_ticker('ETH/JPY')['last'])
+
+    passive_orders = {'ETH': {}}
+
+    prev_mkt_snap = None
+
+    while True:
 
         mkt_snaps = []
         mkt_snaps.append(book_server.get_market_snap(liquid, symbols))
@@ -49,13 +43,15 @@ while True:
         passive_orders = make_markets(
             liquid, cur_mkt_snap, risk, passive_orders)
         # print(passive_orders)
-        time.sleep(2)
+        time.sleep(0.2)
         i += 1
 
-        if i == 60:
+        if i == 30:
             break
+
     book_server.cancel_all(liquid)
-    time.sleep(400)
+    print('*********** rest 400s ***********')
+    time.sleep(5)
 
 
 # print(mkt_snaps)

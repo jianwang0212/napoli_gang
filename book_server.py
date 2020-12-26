@@ -55,4 +55,10 @@ def get_market_snap(session, symbols) -> Market:
 def cancel_all(session):
     open_orders = session.fetch_open_orders()
     for open_order in open_orders:
-        session.cancel_order(open_order['id'])
+        try:
+            session.cancel_order(open_order['id'])
+        except:
+            print('error cancelling all orders')
+
+
+# ccxt.base.errors.OrderNotFound: liquid order closed already: {"id": 3679092174, "order_type": "limit", "quantity": "0.16141821", "disc_quantity": "0.0", "iceberg_total_quantity": "0.0", "side": "buy", "filled_quantity": "0.16141821", "price": 63546.0, "created_at": 1608920427, "updated_at": 1608920461, "status": "filled", "leverage_level": 1, "source_exchange": "QUOINE", "product_id": 29, "margin_type": null, "take_profit": null, "stop_loss": null, "trading_type": "spot", "product_code": "CASH", "funding_currency": "JPY", "crypto_account_id": null, "currency_pair_code": "ETHJPY", "average_price": 63546.0, "target": "spot", "order_fee": 0.0, "source_action": "manual", "unwound_trade_id": null, "trade_id": null, "client_order_id": null}

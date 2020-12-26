@@ -24,10 +24,10 @@ class RiskTolerance:
 def initialise_risk_tolerances(pos, price) -> RiskTolerance:
     current_risk = {'ETH': SymbolRisk(
         pos, price)}
-    max_risk_per_trade = 10000  # jpy
-    max_net_risk = {'ETH': 30000}
+    max_risk_per_trade = 100000  # jpy
+    max_net_risk = {'ETH': 3000000}
     risk_aversion = {sym: np.log(
-        max_risk_per_trade / current_risk[sym].start_price / max_net_risk[sym]) for sym in current_risk.keys()}  # -12
+        max_risk_per_trade / current_risk[sym].start_price / max_net_risk[sym]) / max_net_risk[sym] for sym in current_risk.keys()}  # -12
     return RiskTolerance(max_risk_per_trade=max_risk_per_trade,
                          max_net_risk=max_net_risk,
                          risk_aversion=risk_aversion)
@@ -53,15 +53,23 @@ class RiskServer:
 
     def get_quantity(self, sym: str) -> typing.Tuple[float, float]:
         risk = self.get_trading_risk(sym)  # if pos > 0 , risk < 0
+
         q_0 = self.risk_tolerance.max_risk_per_trade / \
             self.current_risk[sym].start_price  # base quantiy
+
+        bal_c = sum(
+            self.current_risk[sym].qty for sym in self.current_risk.keys())
+        bal_f = self.current_fiat / self.current_risk[sym].start_price
+
+        qty_multiply = 0.2
         if risk >= 0:
-            # q_0 * np.exp(self.risk_tolerance.risk_aversion[sym] * risk) # less than q_0 -> bid less
-            bid_qty = q_0
-            ask_qty = q_0
+            # less than q_0 -> bid less
+            bid_qty = qty_multiply * bal_f * \
+                np.exp(self.risk_tolerance.risk_aversion[sym] * risk)
+            ask_qty = qty_multiply * bal_c
         else:
-            bid_qty = q_0
-            ask_qty = q_0 * \
+            bid_qty = qty_multiply * bal_f
+            ask_qty = qty_multiply * bal_c * \
                 np.exp(-self.risk_tolerance.risk_aversion[sym] * risk)
         return bid_qty, ask_qty
 
