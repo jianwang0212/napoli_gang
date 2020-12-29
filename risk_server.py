@@ -6,6 +6,7 @@ import typing
 import datetime
 import numpy as np
 from math import floor
+import time
 
 
 @dataclass
@@ -61,25 +62,39 @@ class RiskServer:
             self.current_risk[sym].qty for sym in self.current_risk.keys())
         bal_f = self.current_fiat / self.current_risk[sym].start_price
 
-        qty_multiply = 0.2
-        if risk >= 0:
+        bal_ratio = bal_c / bal_f
+
+        qty_multiply = 0.3
+        if bal_ratio >= 1:  # if eth > fiat proportion
             # less than q_0 -> bid less
             bid_qty = qty_multiply * bal_f * \
-                np.exp(self.risk_tolerance.risk_aversion[sym] * risk)
+                np.exp(self.risk_tolerance.risk_aversion[sym] * abs(
+                    risk))  # this number is 0.3, the higher the risk, the lower the number
             ask_qty = qty_multiply * bal_c
         else:
             bid_qty = qty_multiply * bal_f
             ask_qty = qty_multiply * bal_c * \
-                np.exp(-self.risk_tolerance.risk_aversion[sym] * risk)
-        return bid_qty, ask_qty
+                np.exp(self.risk_tolerance.risk_aversion[sym] * abs(risk))
+        return max(bid_qty, 0.01), max(ask_qty, 0.01)
 
 
 def update_risk_server(session, risk_tolerance: RiskTolerance) -> RiskServer:
     symbols = ['ETH']
     fiat = 'JPY'
-    raw_data = session.fetch_balance()
+    try:
+        raw_data = session.fetch_balance()
+    except:
+        print("race condition")
+        time.sleep(0.5)
+        raw_data = session.fetch_balance()
+
     position = {symbol: raw_data['total'][symbol] for symbol in symbols}
-    price = session.fetch_ticker('ETH/JPY')['last']
+    try:
+        price = session.fetch_ticker('ETH/JPY')['last']
+    except:
+        print("price error")
+        time.sleep(0.5)
+        price = session.fetch_ticker('ETH/JPY')['last']
     current_risk = {'ETH': SymbolRisk(position['ETH'], price)}
     current_fiat = raw_data['total'][fiat]
     return RiskServer(risk_tolerance, current_risk, current_fiat)

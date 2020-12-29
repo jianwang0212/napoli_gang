@@ -8,11 +8,9 @@ from datetime import datetime, timedelta
 import operator
 import csv
 
+import cfg
 
-liquid = ccxt.liquid({
-    'apiKey': '1800187',
-    'secret': 'XU5Uf9Dc15SNWD4POVhu1rQOGrIuToO/01AI4nXrOKfBOt4bM4827U6E5fYnH08pnGaRVZ13GnSdQajfNrtpFg=='
-})
+liquid = ccxt.liquid(cfg.liquid_misc_credential)
 
 exchange = liquid
 symbols = ['JPY', 'ETH']
@@ -31,8 +29,11 @@ def write_csv():
     price = exchange.fetch_ticker('ETH/JPY')['last']
     position['total'] = position['JPY'] + position['ETH'] * price
     position['total_USD'] = round(position['total'] / get_fx('JPY'), 1)
+    position['price_jpy'] = price
+    position['price_usd'] = round(price / get_fx('JPY'), 1)
     position['time'] = now.strftime("%y-%m-%d %H:%M:%S")
-    position['timestamp'] = datetime.timestamp(now)
+    position['utc'] = datetime.timestamp(now)
+
     print(position)
 
     if not os.path.isfile("bal.csv"):
